@@ -26,14 +26,13 @@ def test_get_ground_pixel() -> bool:
     assert phf.get_ground_pixel(test1) == (99, 50)
     assert phf.get_ground_pixel(test2) == (479, 320)
     assert phf.get_ground_pixel(test3) == (1079, 960)
-    print("PASS: get_ground_pixel")
+    print("PASS: get_ground_pixel\n")
     return True
     
     
 def test_calc_pixel_angle() -> bool:
     ''' Test cases for the phf.calc_pixel_angles function'''
     ground_pixel = (4,2)
-    print("Beginning Pixel Angle Calculation Test.")
     assert phf.calc_pixel_angle((4,4), ground_pixel) == -90
     assert phf.calc_pixel_angle((4,0), ground_pixel) == 90
     assert phf.calc_pixel_angle((3,2), ground_pixel) == 0
@@ -43,8 +42,8 @@ def test_calc_pixel_angle() -> bool:
     try:
         assert phf.calc_pixel_angle((4,2), ground_pixel) 
     except ValueError:
-        print("Same point check passed.")
-    print("All tests passed!")
+        print("calc_pixel_angle: Same-point-check passed.")
+    print("PASS: calc_pixel_angle\n")
     
     return True
 
@@ -74,9 +73,12 @@ def test_process_centers() -> bool:
         print("FAIL: Process Centers TEST")
         return data, flat_data, means, k
     else:
-        print("Process Centers Test Passed.\n")
+        print("PASS: Process Centers Test.\n")
     return True
     
-    
+if __name__ == '__main__':
+    test_calc_pixel_angle()
+    test_get_ground_pixel()
+    test_process_centers()
     
     
