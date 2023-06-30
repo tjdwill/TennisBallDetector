@@ -1,0 +1,85 @@
+CAP6665 Project 2 Journal
+
+===========
+29 June 2023
+===========
+
+- Adjusted classes from imgClass repo to help with testing.
+- Adjusted "acceleration" debug function to plot with the proper x-y alignment. 
+- Routine print statement removal for clarity. 
+- Implemented corrective rotation based on calculated angle.
+	- More on this: I think I was correct in thinking the story is incomplete on this front. Currently, I am calculating an angle that would result in a rotation about the x-axis ("roll"). This makes sense because the image is 2D. However, the robot would rotate about the z-axis, so how do I determine the proper angle about the z-axis (I believe that's the "yaw" angle). 
+		- Do I need to look into spherical trigonometry?
+
+===========
+28 June 2023
+===========
+
+Discovered the volatility of density calculation due to a single outlier point. Currently attempting to remedy the problem. 
+	- Investigating distance "acceleration": how quickly the change in change in distance occurs. Perhaps this can result in the creation of a boundary between inliers and outliers.
+	- TO find point with max acceleration
+		index = np.nonzero(np.equal(cluster1acc, max(cluster1acc)))[0]
+		
+		Correspo. Distance:
+		index_num = index[0]  # Get the numeric form
+		distance_With_max_accel = cluster1dist[index_num+2]
+	(UPDATE): Added a check during distance calculation. If the acceleration is above a threshold value (currently 5), the program gets the index mentioned above and uses it to get the distance value at that index. This results in getting the distance two indices before the outlier point. (Remember that if point X has the highest acceleration at pointAccel[m], the corresponding distance is at pointDist[m+2]. Therefore, pointDist[m] is two units before point X.
+	
+	Initial tests have proved this to be a promising adjustment.
+	
+::cv_helpers module::
+	Stylistic editing to look more professional.
+	TO-DO: write tests to ensure proper functionality
+
+::Questions::
+	1. What's the best way to choose the proper cluster? Currently, "vote" has an edge over "scoring" as it is able ot more accurately detect edge cases. However, there is a downside that any cluster with significantly higher density is chosen, even if another valid cluster is much closer. 
+	
+	2. Should there be an absolute check for density? As in, do I define a threshold over which a ball is *extremely* likely? The upside of prefering density is that you bias toward more sure ball detections. The "collection" pattern could just be density-biased instead of distance biased. Overtime, the balls will likely still be collected.
+	
+	3. If I do improve "score", how should I do it?
+	
+	4. Currently, the acceleration threshold is 5, and the program picks the distance associated two data points away. This is a result of the calculation for acceleration. If the point of max acceleration has index j. The corresponding distance point is j+2. Passing j into the distance array will get the point 2 units to the left of j (which is guaranteed to exist since j exists in the acceleration array). Is there an even better method for dealing with outliers that is accessible and approachable?
+	
+	5. Currently, the circle detection sees considerable improvement after making adjustments to contrast and doing a triple-Mean+Gauss filtering. Is this viable?
+
+	6. Is it unwise to get rid of radii estimates? What if I need to account for the balls' radii?
+	
+	7. Angle Calculation: How to convert pic angle to real angle about z axis? 
+	
+===========
+27 June 2023
+===========
+TO-DO: Research machine learning modules; what would be best for my needs?
+	- Detectron2 is out; I don't have the hardware for it.
+	- Google Colab?
+
+KMeans:
+	- Added label and legend to plot
+	
+Cluster Filtering:
+	- Added Minimum Cluster Point Count Filtering
+	- Added Cluster Density calculation
+	- Added Cluster-Ground Pixel Distance calculation
+	
+===========
+26 June 2023
+===========
+- Revised angle calulation function to allow for desired input; points will now be input in [row_index, col_index] order.
+	-  Revised corresponding test
+-  Wrote data pre-processing function. Given a list of circle center arrays, it removes the radii information and reorders the remaining elements
+	for the proper order.
+
+- In preparation for k-Means segmentation, modified my KMeans class to accept initial means.
+
+
+===========
+25 June 2023
+===========
+
+-Wrote function that allow the user to calculate the angle formed by a vertical and a vector made from two pixels.
+	Currently, you have to place the target point in reverse order [x,y] rather than the desired [y, x] for image indexin	g.
+		- Also wrote a test to vaiidate the results. 
+	
+- Wrote a function that determines the "ground pixel"; the pixel used to form vectors with other pixels. It is the bottom-center pixel of an image.
+
+
