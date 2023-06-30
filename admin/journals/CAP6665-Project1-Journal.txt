@@ -1,8 +1,8 @@
 Project 1
 
-===========
+=============
 16 June 2023
-===========
+=============
 ::JETHEXA::
 	1. Worked to tune the color thresholding and the Hough Circle Detection	
 		Current Params:
