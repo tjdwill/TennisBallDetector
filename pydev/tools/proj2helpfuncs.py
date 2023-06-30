@@ -5,11 +5,7 @@ Created on Mon Jun 26 18:42:47 2023
 @author: Tj
 """
 import numpy as np
-
-
-DETECT_THRESH = 250
-MIN_POINT_COUNT = int(0.8 * DETECT_THRESH)
-
+import matplotlib.pyplot as plt
 
 def get_ground_pixel(image_shape:tuple):
     '''
@@ -17,7 +13,6 @@ def get_ground_pixel(image_shape:tuple):
     '''
     rows, cols = image_shape[0:2]
     return (rows-1, int(cols/2 + (cols % 2)/2))
-
 
 def calc_pixel_angle(circle_center:np.ndarray, ground_pixel:np.ndarray):
     
@@ -46,26 +41,6 @@ def calc_pixel_angle(circle_center:np.ndarray, ground_pixel:np.ndarray):
     else:
         theta = np.degrees(np.arctan(v[1]/v[0]))
         return theta
-    
-    
-def test_calc_pixel_angle()->bool:
-    ''' Test cases for the calc_pixel_angles function'''
-    ground_pixel = (4,2)
-    print("Beginning Pixel Angle Calculation Test.")
-    assert calc_pixel_angle((4,4), ground_pixel) == -90
-    assert calc_pixel_angle((4,0), ground_pixel) == 90
-    assert calc_pixel_angle((3,2), ground_pixel) == 0
-    assert calc_pixel_angle((0,2), ground_pixel) == 0
-    assert calc_pixel_angle((2,0), ground_pixel) == 45
-    assert calc_pixel_angle((2,4), ground_pixel) == -45
-    try:
-        assert calc_pixel_angle((4,2), ground_pixel) 
-    except ValueError:
-        print("Same point check passed.")
-    print("All tests passed!")
-    
-    return True
-
 
 def process_centers(center_container:list):
     '''
@@ -125,9 +100,10 @@ def process_centers(center_container:list):
 
 def filter_clusters(clusters: dict,
                     centroids: np.ndarray, 
-                    ground_pixel: tuple) -> dict:
+                    ground_pixel: tuple,
+                    COUNT_THRESH: int) -> dict:
     '''
-    
+    Remove clusters that are likely not valid detections.    
 
     Parameters
     ----------
@@ -142,6 +118,10 @@ def filter_clusters(clusters: dict,
     ground_pixel : tuple
         Pass in the output from the get_ground_pixel function.
         This is in [y, x] order.
+        
+    COUNT_THRESH: int
+        Minimum points in a cluster to be a qualifying candidate.
+        
     Returns
     -------
     comparison_dict
@@ -162,6 +142,7 @@ def filter_clusters(clusters: dict,
     grnd_pxl = np.array(ground_pixel)
     comparison_data = {}
     ACCEL_MAX = 5
+    MIN_POINT_COUNT = COUNT_THRESH
     
     #=================
     # Begin Filtering
@@ -345,4 +326,52 @@ def score(cluster_candidates: dict) -> np.ndarray:
         # return centroid
         winner = cluster_candidates[first_place][0]
         return winner
+    
+#%% Debugging Portion: Plotting Distance Acceleration
+# How quickly does the change in distance change per point?
+# Can I detect outliers this way?
+# Honestly, this may be better done interactively via console.
+def inspect_acceleration(clusters, centroids, key):
+    ...
+    """I'm just putting this here as an example so I won't lose the code"""
+    from numpy.linalg import norm
+    # Calculate Differences
+    clust0dist = [norm(clusters[key][i] - centroids[key])
+              for i in range(len(clusters[key]))]
+    clust0dist = np.array(clust0dist)
+    
+    # Sort the distances 
+    sorted_0dist = np.sort(clust0dist)
+    
+    # Get vel and accel
+    sorted_0vel = sorted_0dist [1:] - sorted_0dist[:-1]
+    sorted_0accel = sorted_0vel [1:] - sorted_0vel[:-1]
+    
+    # Find index of max accel
+    index = np.nonzero(np.equal(sorted_0accel, max(sorted_0accel)))[0]
+    index_num = index[0]
+    
+    try:
+        print(f'Max Acceleration: {sorted_0accel[index_num -1 :index_num+2]}')
+        print(f'Velocities around point w/ max accel:\n {sorted_0vel[index_num-2:index_num + 5]}\n')
+        print(f'Distances around point w/ max accel:\n {sorted_0dist[index_num:index_num + 5]}\n')
+    except IndexError:
+        print(f'Print up to it instead: Dist: {sorted_0dist[index_num:index_num + 3]}')
+        print(f'Velocities around point w/ max accel:\n {sorted_0vel[index_num-1:index_num + 1]}\n')
+        print(f'Max Acceleration: {sorted_0accel[index_num]}')
+        
+    # Plot
+    clust0x = np.arange(sorted_0dist.shape[0])
+    fig, ax = plt.subplots()
+    fig.suptitle(f"Cluster {key} Analysis")
+    ax.clear()
+    ax.grid()
+    ax.plot(clust0x, sorted_0dist, label=f"Cluster {key} Distance", zorder=3)
+    ax.plot(clust0x[1:], sorted_0vel, color='g', label=f'Cluster {key} Velocity', zorder=3)
+    ax.plot(clust0x[2:], sorted_0accel, color='r', label=f'Cluster {key} Acceleration', zorder=3)
+    ax.set(xlabel="point", ylabel='Value')
+    ax.legend()
+    plt.show()
+    return sorted_0dist, sorted_0vel, sorted_0accel, index
+
         
