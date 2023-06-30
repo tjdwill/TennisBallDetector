@@ -1,0 +1,102 @@
+Project 1
+
+===========
+16 June 2023
+===========
+::JETHEXA::
+	1. Worked to tune the color thresholding and the Hough Circle Detection	
+		Current Params:
+			- Color threshold [22, 85]
+			- Param1: 100
+			- Param2: 25
+			- minDist: min(rows/8, cols/8) ,<- May adjust this to a max()
+			- Circle Radii [1,120] <- May make this a function of rows and cols.
+	2. Attempted to run my program and a beginner JH movement package. Did not work. (03-forward, 04-rotate)
+		The JH package *did* work when either image publisher or subscriber were offline. 
+		However, the Advanced scripts did work (01-speed_control, 02-fline, 07-wave) 
+		
+		-Debugging:
+			-Comparing the implementations of the launch files and the Python scripts of the advanced and simple scripts.
+			- The only ostensible differences between 02-fline and 03-forward are:
+				a.) the latter makes a call to rospy.spin() in the '__main__' portion; the former does not.
+				b.) the order in which node.start() and rospy.on_shutdown(node.stop) are called are swapped between the files.
+			- The launch files are practically equivalent in structure.
+			-For 07-wave and 04-rotate:
+				a.) Again, 04-rotate, the program that does not work with the image detection, makes a call to rospy.spin() as its last command
+				b.) Launch file-wise, 07 doesn't include the jethexa_controller file, but this is not germane to the problem at hand; the previous example had this file included in both launch files. 
+
+			-Hypothesis:
+				rospy.spin() is the culprit. I have three tests:
+					1.) simple_control_01_speed_control.py does not make a call to rospy.spin(). Let's see if the program can run while the image pub/sub pair run.
+					2.)  Remove the call to rospy.spin() in one of the files and try running the program
+					3.) Add rospy.spin() to a working program to see if it no longer works.
+			**Results**:
+				None of the tests worked. Turns out, the JetHexa appears to freeze for movements, but not for tilts. Also, it will freeze to then proceed with desired behavior if the behavior is enclosed within a loop.
+===========
+15 June 2023
+===========
+
+::Report Writing::
+	Starting because I've been procrastinating on this part.
+	Outline:
+		-Intro (what's the goal for the overall semester and this project in particular)
+		- Implementation
+			- Ball Detection (Color Masking + Hough Circle) 
+			- ROS Communication
+		- Analysis
+			- Parameter Adjustment
+			- Lighting Conditions
+			- Why so many false positives?	
+				The problem comes with minDist, Circle Radii, and Params 1 and 2
+					minDist -> Causes "close" tennis balls to result in false negative. 
+					circle Radii -> can result in false negatives (circles not detected) or false positives (large circles but not a ball)
+					Tennis ball distance from camera also exacerbates this. Farther distances result in smaller radii. Too close, the detector won't detect the ball.
+					
+		- Flowchart
+			- ROS Communication Structure?
+			
+::JETHEXA NOTES::
+	-	Was able to send and receive image data (YES!)
+		- ROS Melodic is annoying for Python2/3 compatibility.
+		- In the future, use the #!/usr/bin/env python  Rather than python3; Especially when using cv_bridge
+	- Decided to scale image down to a quarter of the area (1920x1080 -> 960 x 540). This allows the program to run faster (much less lag).
+	- Must tune Hough Parameters
+	- Must tune image mask.
+		- Incandescent-style lighting is detrimental to the color detection because it bathes all of the objects in yellow light, the color being detected. 
+		- May switch to a white LED.
+		
+::ROS::
+I tried to connect the VM to the JetHexa, but I had no luck. I don't know how to ensure the VM is on the JH network. Also, both entities are connected to their respective localhosts. I don't know what to do about that because I am unfamiliar with networking.
+
+- About to CHANGE 
+	- "$HOME/.hiwonderrc" file. I will comment out the ROS_MASTER_URI and ROS_HOSTNAME exports.
+	- CHANGE of PLANS: uncomment the AUTO_ROS_HOSTNAME and AUTO_ROS_MASTER_URI parameters.
+	
+	- For now, I have to shut down the jethexa startup service and then run roscore to get the communication to work properly.
+	
+	- By the good grace of TMH, it worked.
+	
+===========
+13 June 2023
+===========
+
+OpenCV to ROS
+Tutorial: (https://automaticaddison.com/working-with-ros-and-opencv-in-ros-noetic/)
+
+==========
+9 June 2023
+==========
+	-Was able to interface with the JH camera using VideoCapture(0) parameter. Not sure how to use all of the parameters JH implementations provided. 
+	-Tested initial color detected and Hough Circles. CD worked as expected. Blue and red balls masked out. Green ball remained. 
+		Hough Circles are a bit trickier. I need to tune the parameters to ensure desired effect. It's highly likely that the MAX_CIRCLE_RADIUS will need to decrease, and the parameters 1 and 2 varied. Maybe the minimum detection distance as well. 
+			Params to tune:
+				-MAX_CIRCLE_RADIUS
+				-Param1, Param2
+				-minDist
+	-I will also need to make the program more ROS idiomatic. 	
+		[DONE]Publish images from one node
+		-Subscribe to topic and run detection in another node.
+		-If ConsecDetect threshold passed, send message
+			+Boolean (detected)
+			+ Contour center point coordinate.
+		- Launch file
