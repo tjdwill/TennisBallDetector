@@ -7,12 +7,18 @@ import numpy as np
 from numpy_msg.msg import ROSNumpy
 
 
-def construct_rosnumpy(array: np.ndarray) -> ROSNumpy:
+def construct_rosnumpy(array):
     """
     Construct a ROSNumpy message from a provided ndarray
     Because Numpy arrays are contiguous in memory, 
     we can flatten the array and reconstruct it if
     we know the shape and datatype.
+
+    Parameter(s):
+    array: np.ndarray
+
+    Output(s):
+    msg: ROSNumpy
     """
     # Get array information
     shape = array.shape
@@ -24,9 +30,15 @@ def construct_rosnumpy(array: np.ndarray) -> ROSNumpy:
     return msg
 
 
-def open_rosnumpy(msg: ROSNumpy) -> np.ndarray:
+def open_rosnumpy(msg):
     """
     Reconstructs the original array from a ROSNumpy msg.
+
+    Parameter(s):
+    msg: ROSNumpy
+
+    Outputs(s):
+    result_array: np.ndarray
     """
     # Unpack array
     shape, dtype, data = msg.shape, msg.dtype, msg.rosnp
