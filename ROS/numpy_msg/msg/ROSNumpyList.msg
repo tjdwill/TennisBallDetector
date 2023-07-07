@@ -1,1 +1,1 @@
-ROSNumpy[] rosnp_list
+numpy_msgs/ROSNumpy[] rosnp_list
