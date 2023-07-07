@@ -1,5 +1,110 @@
 CAP6665 Project 2 Journal
 
+
+===========
+6 July 2023
+===========
+- Did some much-needed report writing. Wrote all about the solution to the noise problem. I'm glad I started the report today because doing it all at once would have been dreadful honestly.
+
+- Conducted more tests on the JetHexa's motion controller. None of the tutorials (to my knowledge) instruct the user on how to make the robot move through a specifc angle or distance. It seems the controller is meant for more continuous-based movement though a finite number of steps can be specified.
+
+Moreover, the parameters in the traveling [sic] function have different functions than stated. For example,
+	- rotation is actually the angle (in radians) the robot moves through per *cycle* (Hiwonder -> me, step -> movement cycle; stride -> one leg tep).
+	- time is the amount of time a cycle takes to complete (affects rotation speed for example)
+	- steps is the number of complete movement cycles.
+	
+What I also found was that the robot doesn't rotate through the angle one would expect when over a certain to-be-determined value. For example, 
+			(rotation=pi/10;  time= 1.0; steps = 10) should result in a 180 degree movement over the course of 10 seconds. In reality, it was about 325. At the very least it was well over 180 (and 270). However, (rotation=pi/20 [9 degrees]; time= 1.0; steps=11 [yes, 11]) resulted in 180 rotation to my confusion.
+	
+At a rotation "speed" of 1 degree per cycle (pi/180); time=1.0, steps=180; I get the desired motion. The problem, however, is that it takes 1 second per cycle. I can bump it down to 0.5s per cylce, but that would still be lengthy. I may try 2, 4, 6, and 8 degrees per cycle. I tried 10 and got the exact same result as 9 degrees.; it took 11 steps.  
+
+This likely means I have lower resolution for the angle movements. That shouldn't be too troublesome, however, because the angles don't have to be exact in order to produce a good alignment with a detected tennis ball. This is likely going to be a trial-and-error type of deal.
+
+I tried reading through the source code again to see if I could find answers for this behavior, but it did not yield desirable results. For one, I am not at the level of programming skill to deeply understand a system as complex as the JetHexa; it's really a great piece of software engineering in my inexperienced eyes. Additionally, however, there is an imported module called "kinematics" that leads me to a dead end because I can't find it. I don't know where the module comes from, and online searches don't seem to either, unfortunately.
+
+- Create templates for the project's ROS packages.
+===========
+5 July 2023
+===========
+Today was primarily a research day in the sense that I spent time learning about ROS aActions and how they work. After gaining a basic ugrasp of the communnication method, I followed a few tutorials to write SimpleActionClient and SimpleActionServer. To test that the data was transported correctly, I printed the data (numpy arrays) from both the server-side and the clientside. The results were quite pleasing, both versions matching identically. 
+
+The purpose of the test was to ensure actions would be a viable communication option for the second and thrid subsystems fof the project (ball detector and data processing unit, respectively_. Now, not only do I have a means of sending the data and allowing for a long recipient callback, I can block the ballDetector from taking in new input until the data processor is finished with the data. This solves my problem regarding synchronization for now.
+
+UPDATE:
+So I was wrong (completely) about the JetHexa control. I need to use the jethexa_controller.client.Client() method in order to attain the desired motion. The other method results in the robot twisting as if one were to look over his or her shoulder. Using the client method results in in-place motion. To do so, set the stride to zero in the traveling [sic] method call.
+
+Also, I may do something rather unorthodox to implement the project. One of my nodes may need to be a subscriber, SimpleActionServer, and a ServiceClient. I'm not sure if that is a huge error in terms of communication, but I truly think this may be a necessary course-of-action. I am unable to think of a way to cleanly segment the nodes, and I won't invent a reason to do so. We'll see if it works.
+
+===========
+4 July 2023
+===========
+	- Studied the JetHexa source code and example code to review how the robot operates and how I may control it. What I've learned was that there are two primary methods of controlling the robot via the API:
+		When the robot actually moves out of place, HiWonder's example programs use the client from the jethexa_controller package to send commands via the tupical publisher-subscriber method. The client object instantiates an instance of the jJetHexa object that servesas the primary controll for the robot. It listens on the topic and coordinates the necessary movements to perform the action.
+		
+		For programs that only move in-place, the client is not imported. Instead, the jethexa module is imported directlyu, and it's JetHexa object is instantiated. Then, this object's transform_pose_2 method is used to alter the robot's pose via rotation or in-place translation.
+
+		Since my goal is to rotate the robot in place, I will use the latter method. As a bonus, unlike the use of the other method, I do not have to add an "include" to my .launch file.
+
+ -  Revised the implementation of the custom ROS Messages. 
+	Now called ROSNumpy and ROSNumpyList, respectively. The former still  takes a float64[] but also has an int16[] for the ndarray shape and 'string' for the dtype. As a result, we can (in theory) deconstruct and reconstruct any numpy array like so:
+	
+	Sources:
+	https://numpy.org/doc/stable/reference/arrays.interface.html#arrays-interface
+	
+	
+	> arr = np.random.randint(0, 100, size(4, 3)  # Example array
+	> msg = ROSNumpy()
+	> msg.dtype = arr.dtype.name  # A string rep. of the array's dtype
+	> msg.shape = arr.shape
+	> msg.rosnp = arr.reshape(-1)  # completely flatten array.
+	
+	This works because, even though the abstraction allows us to think in multi-dimensional array depictions, the array is physically represented in memory as a single-contiguous array. We're just reducing and then restoring the level of abstraction.
+	
+	
+	I wrote helper functions to assist with msg construction and deconstruction, allowing the use of map() and/or list comprehension (LC) to increase readibility.
+	
+	::For multiple arrays (list of numpy arrays)::
+	*Assume they've all been converted to ROSNumpy messages* (Loop, LC, etc.)
+	
+	> arr_list = [msg1, msg2, ...]
+	>arr_msg = ROSNumpyList(arr_list)
+	> pub.publish(arr_msg)
+	
+	To retrieve the data  (unpack and reconstruct):
+	*From ROSNumpyList* Here is an example of retrieving the first array (step-by-step):
+	> received_list = msg.rosnp_list
+	> first_array = received_list[0]
+	> first_shape = first_array.shape
+	> first_dtype = first_array.dtype
+	> first_array  = first_array.rosnp
+	# Reconstruct the original array
+	> first_array = np.array(first_array, dtype=first_dtype).reshape(first_shape)
+	
+	
+===========
+3 July 2023
+===========
+
+::ROS Work::
+- Experimented with Matplotlib on a ROS pub/sub dynamic. Attempted to find matplotlibrc file, but could not locate it on my VM. Checked ~/.config, and various /usr sub-directories. Note that because MPL currently uses Tkinter on Linux, it will force a block for interactive plotting that renders rospy.spin() useless. 
+
+- Implemented a means to send an array of Numpy arrays as a message (Numpy64List). ROS apparently wants the users to define use-case specific message rather than rely on standard messages (especially for semantically-relevant field names), so I used the fact that Numpy's multi-dimensionality is simply an abstraction to my advantage by flattening the arrays to 1-D. The message receiver can then unpack the messages and reconstruct the original arrays (we know the inner-most channel has 3 elements). If desired, perhaps I can store each array's shape as a list (or pre-allocated array?) to allow reconstruction that is more robust.
+
+
+To-Do for this week, 
+	- Study the JetHexa's controller (review how it works); How can you pass an angle to it to get the desired rotation?
+	- 
+
+Meeting w/ Prof. Sevil
+
+1. What's the best way to choose the proper cluster? Currently, "vote" has an edge over "scoring" as it is able ot more accurately detect edge cases. However, there is a downside that any cluster with significantly higher density is chosen, even if another valid cluster is much closer. 
+	A: Trust the numbers; Use trials to compare the results and choose based on that. Be sure to test in multiple environments. (inside, outside, diff. room, etc.)
+	
+2.  Is it unwise to get rid of radii estimates? What if I need to account for the balls' radii?
+	A: If it would ruin your momentum to restructure the program, don't worry about it right now.
+	
+7. Angle Calculation: How to convert pic angle to real angle about z axis? 
+	A. We don't need to; just place the angle as a yaw angle. Test to ensure it works.
 ===========
 29 June 2023
 ===========
