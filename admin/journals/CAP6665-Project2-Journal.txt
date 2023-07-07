@@ -1,6 +1,40 @@
 CAP6665 Project 2 Journal
 
+===========
+7 July 2023
+===========
+I had quite the scare this morning. I thought I (somehow) removed the jethexa packages from the system. Before, I'd tried to build the numpy_msgs package with the custom messages and helper module, but I kept receiving an ImportError message regarding a Python module called 'em'. Even though the module was on the system, it wouldn't import. answer.ros.org residents say it is because 'em' conflicts with another package called "empy". What I had to do was the processo outlined 
 
+https://answers.ros.org/question/257331/python-module-empy-missing-tutorials/
+
+
+
+1.    source ros from /opt/ros/kinetic/setup.zsh  (melodic in my case)
+
+2.    clean up your catkin workspace (except src)
+
+   $ cd ~/catkin_ws
+   $ unlink src/CMakeLists.txt
+   $ rm -rf build
+   $ rm -rf devel
+   $ rm .catkin_workspace
+
+3.   Re-initialize the workspace with catkin_init_workspace from inside src
+4.   Run catkin_make
+
+The problem was that I didn't realize that "jethexa" was its own catkin workspace, so sourcing ROS's setup.zsh without subsequently sourcing jethexa/devel/setup.zsh resulted in the jethexa workspace being invisible to ROS. After sourcing the setup file and then rebuilding MY workspace with catkin_make, the build completed successfully, and ROS could see JetHexa packages.
+
+
+I also learned that roslaunch automatically begins a roscore if it hasn't, which is why I thought Hiwonder had a way to start roscore in the shell automatically. That's why rosrun would not work without calling roscore in a separate shell first.
+
+We got everything working so far, PY.
+
+
+---
+Finished subsystems 01-03 (Photographer, BallDetector, and DetectionProcessor). Had to update the libraries numerous times, but now it is working as expected. PY
+Looking forward to integrating subsystem04 (JetHexa Controller) to begin testing and revision.
+
+Also, a portion of the rewriting of the module(s) were due to Python 2.7 restrictions. Featuers I currently take as a given are not present in that version, so the code has to be backwards compatible.
 ===========
 6 July 2023
 ===========
