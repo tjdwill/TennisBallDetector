@@ -1,0 +1,12 @@
+<?xml version="1.0" ?>
+<launch>
+	<rosparam command="load" file="$(find tw_tennis)/config/tw_tennis_params.yaml" />
+
+	<group ns="tw_tennis">
+		<include file="$(find jethexa_controller)/launch/jethexa_controller.launch"></include>
+		<node name="ss04_RobotController" pkg="tw_tennis" type="ss04_RobotController.py" output="screen" required="true"></node>
+		<node name="ss03_DetectionProcessor" pkg="tw_tennis" type="ss03_DetectionProcessor" output="screen" required="true"></node>
+		<node name="ss02_BallDetector" pkg="tw_tennis" type="ss02_BallDetector" output="screen" required="true"></node>
+		<node name="ss01_Photographer" pkg="tw_tennis" type="ss01_Photographer" output="screen" required="true"></node>
+	</group>
+</launch>

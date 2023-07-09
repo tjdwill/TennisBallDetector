@@ -1,0 +1,4 @@
+float32 deg_angle
+---
+bool move_successful
+---

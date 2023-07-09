@@ -1,0 +1,5 @@
+uint16[] img_shape
+numpy_msgs/ROSNumpyList detections
+---
+float32 deg_angle
+---

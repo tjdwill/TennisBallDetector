@@ -1,0 +1,5 @@
+tw_tennis:
+        ss01_ss02_topic: "ImageHub"
+        ss02_ss03_topic: "ProcessDetection"
+        ss02_ss04_topic: "MoveRobot"
+        DETECTION_THRESH: 50
