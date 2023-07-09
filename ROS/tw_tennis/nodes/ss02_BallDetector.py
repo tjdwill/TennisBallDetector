@@ -7,7 +7,7 @@ Author: Terrance Williams
 Date: 07 July 2023
 Description: Creates a ROS Subscriber to transfer images to the /image_hub topic
 
-Credit: Addison Sears-Collins
+Credit: Addison Sears-Collins; ROS Tutorials
 https://automaticaddison.com/working-with-ros-and-opencv-in-ros-noetic/
 https://wiki.ros.org/actionlib_tutorials/Tutorials/
 """
