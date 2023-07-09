@@ -1,5 +1,0 @@
-uint16[] img_shape
-numpy_msgs/ROSNumpyList detections
----
-bool was_successful
----
