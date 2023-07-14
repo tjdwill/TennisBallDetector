@@ -1,5 +1,66 @@
 CAP6665 Project 2 Journal
 
+
+=============
+14 July 2023
+=============
+
+- Changed "processing_helpers.py" to now output a default angle (360) to signal that the input list was empty.
+- Refactored BallDetector class in ss02_BallDetector 
+    - Made resetting the detection infrastructure a function.
+    - Added a check for the 360 degree angle result.
+- Tested the program with the new tuner setup. Tuner sets params, and ss02 is able to get them.
+
+
+- Noticed an odd behavior regarding subsequent detections. The plot shows detection points that are outliers. These points may be due to camera shifting after waking from sleep, but I don't understand how that would be possible since the physical device doesn't move. It also isn't due to old images because the queue size is 1. 
+    - It is to be noted, however, that resetting the detection count midway (I obscure the camera with an object and then remove it) does result in normal behavior. No erratic points, so I am thinking it does have something to do with the first few images processed on a post-move detection.
+    
+- Did some investigating between calculated angle and the factor needed to actually align with the ball. So far, for angles greater than 50 in magnitude, the factor seems to be around 2. I will run a test where I half the angle for large values and see if the JH can align with the ball in one pass.
+
+ 
+=============
+13 July 2023
+=============
+
+- Updated "cameraTuner.py" to be a true ROS node. It now loads a default parameter configuration and updates the ROS Parameter Server upon the program exiting. 
+- In light of the "cameraTuner.py" changes, "ss02_BallDetector" was updated to get its image processing parameters from the ROS Parameter Server.
+
+=============
+12 July 2023
+=============
+Went to ISR Lab and observed the ball detection in that environment. The lighting led to changes in S_min and V_min in the HSV parameters. Blurs and contrast were the same though.
+
+
+I'm considering making the cameraTuner.py file a separate program within the package that will allow the user to tune the camera and upload the parameters to the Parameter Server before a run of the detection program. This will allow the program to be more adaptive and will save space on using different sets of configurations. 
+
+Also, I created an ad-hoc solution to the angle problem. I just reduce the calculate angle by a factor of five. Over multiple detection cycles, the robot converges to the ball. I can still pursue better methods (of course), but this will work for video purposes.
+
+=============
+10 July 2023
+=============
+Updated report to include ROS implementation details and Results. 
+
+===========
+9 July 2023
+===========
+::Code editing::
+- Re-wrote MoveRobot.srv to be an action MoveRobot.action
+- Implemented ss04_RobotController
+- Created tw_tennis.launch
+- ss03_DetectionProcessor: implemented SimpleActionClient logic.
+
+
+I think I will have to rewrite the code such that only ss02 is a SimpleActionClient. Currently, it goes ss02->ss03->ss04 in nested processes, but I would be more comfortable if it goes ss02->ss03; ss02->ss04. The code will still block ss02 from detecting, but this way I won't have a nested process, ss03 won't be SimpleActionServer and a SimpleActionClient, and ss02 will be SimpleActionClient for two SimpleActionServers. I will have to adjust the ProcessDetection.action file to return the calculated angle as its result.
+
+
+- Just rewrote the ss02 node to be a SAC for ss04 in addition to ss03. I also reorganized the code to run from a class; it's now much neater in my opinion.
+    - Changed ss01 to display uninterrupted live feed; Useful for when ss02 goes into blocking and gives a purpose to images captured during this time period.
+    - ss02 houghCircles method to only display the blurred image if we internally toggle debug mode. I did this to keep the screen from becoming cluttered with too many outputs (similar to that of ss03's Matplotlib debug option).
+    - Added an additonal ROS Paramter for DETECTION_THRESH. If the programs can successfully grab the parameters from the Parameter Server, I will remove the relevant hard-coded values.
+- I was able to get the ROS Parameter Server version working. The JetHexa is now able to detect balls, cal. angles, and move. Problem is, it keeps moving past the ball (which is what I feared). Spherical Geometry, it is. Hopefully, that will work for me.
+- Also, I need to figure out how long to block for the robot to finish its move. Right now, I'm truing 2x the number of movement cycles it needs to take since each movement cycle is ~1 second long.
+
+
 ===========
 7 July 2023
 ===========
@@ -9,9 +70,9 @@ https://answers.ros.org/question/257331/python-module-empy-missing-tutorials/
 
 
 
-1.    source ros from /opt/ros/kinetic/setup.zsh  (melodic in my case)
+1. source ros from /opt/ros/kinetic/setup.zsh  (melodic in my case)
 
-2.    clean up your catkin workspace (except src)
+2. clean up your catkin workspace (except src)
 
    $ cd ~/catkin_ws
    $ unlink src/CMakeLists.txt
@@ -19,8 +80,8 @@ https://answers.ros.org/question/257331/python-module-empy-missing-tutorials/
    $ rm -rf devel
    $ rm .catkin_workspace
 
-3.   Re-initialize the workspace with catkin_init_workspace from inside src
-4.   Run catkin_make
+3. Re-initialize the workspace with catkin_init_workspace from inside src
+4. Run catkin_make
 
 The problem was that I didn't realize that "jethexa" was its own catkin workspace, so sourcing ROS's setup.zsh without subsequently sourcing jethexa/devel/setup.zsh resulted in the jethexa workspace being invisible to ROS. After sourcing the setup file and then rebuilding MY workspace with catkin_make, the build completed successfully, and ROS could see JetHexa packages.
 
@@ -34,7 +95,9 @@ We got everything working so far, PY.
 Finished subsystems 01-03 (Photographer, BallDetector, and DetectionProcessor). Had to update the libraries numerous times, but now it is working as expected. PY
 Looking forward to integrating subsystem04 (JetHexa Controller) to begin testing and revision.
 
-Also, a portion of the rewriting of the module(s) were due to Python 2.7 restrictions. Featuers I currently take as a given are not present in that version, so the code has to be backwards compatible.
+Also, a portion of the rewriting of the module(s) were due to Python 2.7 restrictions. Features I currently take as a given are not present in that version, so the code has to be backwards compatible.
+
+
 ===========
 6 July 2023
 ===========
