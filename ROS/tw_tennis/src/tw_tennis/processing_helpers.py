@@ -3,7 +3,7 @@
 """
 Created on Mon Jun 26 18:42:47 2023
 
-@author: Tj
+@author: Terrance Williams
 """
 import numpy as np
 import matplotlib.pyplot as plt
@@ -18,6 +18,12 @@ def get_ground_pixel(image_shape: tuple) -> tuple:
 
 
 def calc_pixel_angle(circle_center: np.ndarray, ground_pixel: np.ndarray):
+    
+    # Check for an empty list or Numpy array.
+    # This means the voting mechanism could not decide on a winner. 
+    # Return 360 as an angle because that is not an expected angle value. 
+    if len(circle_center) == 0:
+        return 360
 
     # Pass in the discovered centroid of chosen cluster of
     # detected centers from the Hough Circle detection. The point is in order
@@ -29,7 +35,9 @@ def calc_pixel_angle(circle_center: np.ndarray, ground_pixel: np.ndarray):
 
     # Calculate vector
     v = np.array([i-a, j-b])
-    # print(f'Vector v: {v}')
+    v_norm = np.linalg.norm(v)
+    print(f'Vector v: {v}\n')
+    print(f'Vector length: {v_norm}')
     # Angle Calculation: Due to unusual positioning of picture coordinates,
     # theta = arctan(j-b/i-a)
     if v[0] == 0:
@@ -43,6 +51,8 @@ def calc_pixel_angle(circle_center: np.ndarray, ground_pixel: np.ndarray):
         return theta
     else:
         theta = np.degrees(np.arctan(v[1]/v[0]))
+        theta_norm = theta / (v_norm/10)
+        print(f'Angles: {theta}, {theta_norm}')
         return theta
 
 
@@ -66,7 +76,7 @@ def process_centers(center_container: list):
     -------
     indices:list
         The reformated circle centers container. Now ordered as
-        [y, x]. The radii are discarded as they are unneeded.
+        [x, y]. The radii are discarded as they are unneeded.
 
     means:np.ndarray
         The array with the most entries; chosen to help mitigate effects of
@@ -218,12 +228,16 @@ def vote(cluster_candidates: dict) -> np.ndarray:
         The centroid belonging to the winning cluster (in [y, x] form).
 
     """
+    # NOTE: DEBUG
+    print('Vote DEBUGGING')
+    for key in cluster_candidates:
+        print(cluster_candidates[key])
 
     # Recall the dict values have order
     # (clust_centroid, clust_point_count, clust_point_density, clust_GPD)
     # Matching Index: 0, 1, 2, 3
 
-    DENSITY_THRESH = 1.75
+    DENSITY_THRESH = 1.5
     num_candidates = len(cluster_candidates)
 
     # Simple Case Checks
@@ -244,6 +258,7 @@ def vote(cluster_candidates: dict) -> np.ndarray:
 
     for key in cluster_candidates:
         # Stage 1
+        print(f'VOTE: Cluster {key}')
         candidate = cluster_candidates[key]
         density = candidate[2]
         if count == 0:
@@ -254,7 +269,9 @@ def vote(cluster_candidates: dict) -> np.ndarray:
                 # update metric trackers
                 second_place_density, spindex = first_place_density, fpindex
                 first_place_density, fpindex = density, key
-            elif count == 1:
+            elif density > second_place_density:
+                second_place_density, spindex = density, key
+            elif count == 1 and (fpindex == spindex):
                 # Get the second place contender; Doing this will result in the
                 # Function voting properly in the case of only two candidates
                 # with identical densities, but the first candidate considered
@@ -279,7 +296,7 @@ def vote(cluster_candidates: dict) -> np.ndarray:
 
             else:
                 winner = cluster_candidates[spindex][0]
-                print(f"VOTE: Winner Decided by GPD! Cluster {spindex}")
+                print(f"VOTE: Upset! Winner Decided by GPD! Cluster {spindex}")
 
         return winner
 

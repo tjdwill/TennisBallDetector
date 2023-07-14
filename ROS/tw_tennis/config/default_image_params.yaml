@@ -1,0 +1,13 @@
+img_params:
+        HUE_LOWER: 20
+        HUE_UPPER: 70
+        SATURATION_LOWER: 28
+        SATURATION_UPPER: 255
+        BRIGHTNESS_LOWER: 108
+        BRIGHTNESS_UPPER: 255
+        NUM_BLURS: 3
+        RADIUS_MIN: 10
+        RADIUS_MAX: 80
+        PARAM_1: 100
+        PARAM_2: 32
+        ALPHA: 1

@@ -1,0 +1,8 @@
+<?xml version="1.0" ?>
+<launch>
+	<group ns="tw_tennis">
+		<rosparam command="load" file="$(find tw_tennis)/config/default_img_params.yaml" />
+		<node pkg="tw_tennis" type="cameraTuner.py" name="cameraTuner" output="screen"></node>
+	</group>
+</launch>
+

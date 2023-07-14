@@ -54,18 +54,22 @@ class RobotController:
         takes one second.
         We must calculate the number of steps based on the angle.
         """
-        angle = goal.deg_angle
+        # Scale angle down for desired motion. 
+        # The factor used is a trial-and-error value.
+        angle = goal.deg_angle / 6
+        angfac = 180
         # move (+/-) 1 degree per mvmt cycle (expressed in rad)
         if angle < 0:
-            rotation_rate = -(np.pi / 180) 
+            rotation_rate = -(np.pi / angfac) 
         else:
-            rotation_rate = (np.pi / 180) 
+            rotation_rate = (np.pi / angfac) 
         time_per_cycle = 1
         # Number of movement cycles [unit check]: 
         # [degrees] / [rad/cycle * degrees/rad] -> [degrees] * [cycle/degrees]
         # [cycles] as desired.
-        cycles = int(angle / (rotation_rate * (180 / np.pi))
-                     )
+        cycles = int(np.ceil(angle / (rotation_rate * (180 / np.pi))
+                     ))
+        print(f'{self.name}: Cycles: {cycles}')
         try:
             self.jethexa_client.traveling(
                     gait=1, # ripple gait 
@@ -80,7 +84,11 @@ class RobotController:
             # Sleep until robot moves (3 seconds longer than time the complete motion takes.)
             # time_taken = [s/cycle]*[cycle] -> s
             time_taken = round(time_per_cycle * cycles)
-            rospy.sleep(int(2*time_taken))
+            if time_taken < 10:
+                rospy.sleep(10)
+            else:
+                rospy.sleep(int(2*time_taken))
+            
         except Exception as e:
             rospy.loginfo("{}: Could not move robot.\nError: {}", self.name, e)
             self._result.move_successful = False

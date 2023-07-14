@@ -7,7 +7,7 @@ Author: Terrance Williams
 Date: 07 July 2023
 Description: Creates a ROS Subscriber to transfer images to the /image_hub topic
 
-Credit: Addison Sears-Collins; ROS Tutorials
+Credit: Addison Sears-Collins
 https://automaticaddison.com/working-with-ros-and-opencv-in-ros-noetic/
 https://wiki.ros.org/actionlib_tutorials/Tutorials/
 """
@@ -30,17 +30,22 @@ class BallDetector:
     # Class Variables
     # ================
     # Image Processing Parameters
-    SATURATION_LOWER = 28
-    SATURATION_UPPER = 255  # Max 'S' value in HSV
-    BRIGHTNESS_LOWER = 108
-    BRIGHTNESS_UPPER = 255  # Max 'V' Value in HSV
-    HUE_LOWER = 20
-    HUE_UPPER = 70
-    NUM_BLURS = 3
-    RADIUS_MIN = 10
-    RADIUS_MAX = 80
-    PARAM_1 = 100
-    PARAM_2 = 32
+    
+    img_params = rospy.get_param("img_params")
+
+    HUE_LOWER = img_params["HUE_LOWER"]
+    HUE_UPPER = img_params["HUE_UPPER"]
+    SATURATION_LOWER = img_params["SATURATION_LOWER"]
+    SATURATION_UPPER = img_params["SATURATION_UPPER"]
+    BRIGHTNESS_LOWER = img_params["BRIGHTNESS_LOWER"]
+    BRIGHTNESS_UPPER = img_params["BRIGHTNESS_UPPER"]
+    NUM_BLURS = img_params["NUM_BLURS"]
+    RADIUS_MIN = img_params["RADIUS_MIN"]
+    RADIUS_MAX = img_params["RADIUS_MAX"]
+    PARAM_1 = img_params["PARAM_1"]
+    PARAM_2 = img_params["PARAM_2"]
+    # ALPHA = img_params["ALPHA"]
+
 
     # Detection-Specific Infrastructure
     center_container = []
@@ -66,6 +71,15 @@ class BallDetector:
         sub = rospy.Subscriber(BallDetector.image_topic, Image, self.callback)
         rospy.loginfo("{}: Online.".format(self.name))
 
+    # =================
+    # Private Functions
+    # =================
+    def _reset_detections(self):
+        # Reset circle container
+        # Reset count
+        del BallDetector.center_container[:]
+        BallDetector.count = 0
+        assert (len(BallDetector.center_container) == 0) and (BallDetector.count == 0)
     # =================
     # Public Functions
     # =================
@@ -116,16 +130,14 @@ class BallDetector:
         # Check the chain of detections.        
         if last_count == BallDetector.count:
             # Detection Chain Broken; reset global variables
-            BallDetector.count = 0
-            last_count = BallDetector.count
-            del BallDetector.center_container[:]
-            assert len(BallDetector.center_container) == 0
+            # last_count = BallDetector.count
+            self._reset_detections()
+           
         else:
             # Chain continued; update variables
             # NOTE: At this point, the detected circle centers are Numpy arrays!
-            last_count = BallDetector.count
             center_container.append(circles)
-            assert len(BallDetector.center_container) == len(center_container)
+            assert len(BallDetector.center_container) == BallDetector.count
             rospy.loginfo("Consec. Detection Count: {}"
                     .format(BallDetector.count))
 
@@ -156,6 +168,10 @@ class BallDetector:
             if result is None:
                 rospy.loginfo('{}: Processing FAIL.'.format(self.name))
                 rospy.signal_shutdown("SS02: Processing Error from SS03.")
+            elif result == 360:
+                # Angle 360 means no ball was found. Try again.
+                rospy.loginfo('{}: No ball found. Resetting...'.format(self.name))
+                self._reset_detections()
             else:    
                 rospy.loginfo(('{}: Processing was successful. '.
                                format(self.name) +
@@ -170,10 +186,8 @@ class BallDetector:
                 else:
                     rospy.loginfo('{}: Resetting for next detection.'
                                   .format(self.name))
-                    BallDetector.count = 0
-                    last_count = BallDetector.count
-                    del BallDetector.center_container[:]
-                
+                    self._reset_detections()
+                    rospy.sleep(5)  
 
     """
     Image Processing Functions
