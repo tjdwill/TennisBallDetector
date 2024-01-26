@@ -1,1 +1,0 @@
-Where I place the code to test various features of the program before implementing them in a ROS-compatible way. Essentially, get the features to work in a controlled environment before adding additional hardware and software variables into the mix.
